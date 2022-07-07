@@ -18,10 +18,6 @@ raven as (
 from risk_model_svc_prod.risk_score_requests
 order by business_id desc),
 
-rc as (select distinct job_id,
-                    trim(json_extract_path_text(calculation,'p2 <<- schedule rating rate','factor', true)) as SRF
-       from s3_operational.rating_svc_prod_calculations
-),
 
 srf as (select job_id, trim(json_extract_path_text(calculation,'p2 <- schedule rating rate','schedule_rating_factor', true)) as SRF
 from s3_operational.rating_svc_prod_calculations
@@ -30,14 +26,16 @@ where lob = 'GL')
 select * from qpm
     left join fcra on fcra.business_id = qpm.business_id
     left join raven on raven.business_id = qpm.business_id
-    left join rc on case when highest_status_package = 'basic' then basic_quote_job_id
+    left join srf on case when highest_status_package = 'basic' then basic_quote_job_id
                 when highest_status_package='basicTria' then basic_tria_quote_job_id
                 when highest_status_package= 'pro' then pro_quote_job_id
                 when highest_status_package= 'proTria'then pro_tria_quote_job_id
                 when highest_status_package='proPlus' then pro_plus_quote_job_id
                 when highest_status_package='proPlusTria' then pro_plus_tria_quote_job_id
                 else pro_quote_job_id
-                end = rc.job_id
+                end = srf.job_id
+
+
 
 
 
