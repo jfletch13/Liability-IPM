@@ -52,6 +52,9 @@ select qpm.business_id,
        qpm.year_business_started,
        qpm.GL_Amendment,
        qpm.highest_status_package,
+       qpm.highest_policy_id,
+       qpm.highest_yearly_premium,
+       qpm.highest_policy_status,
        fcra.fcra_score,
        raven.raven_score,
        raven.raven_bin,
@@ -60,4 +63,3 @@ select qpm.business_id,
     left join fcra on fcra.business_id = qpm.business_id
     left join raven on raven.business_id = qpm.business_id
     left join srf on srf.job_id = qpm.highest_job_id
-
