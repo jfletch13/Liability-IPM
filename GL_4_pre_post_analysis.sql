@@ -30,10 +30,10 @@ order by business_id desc),
 
 srf as
     (select job_id,
-            nvl(trim(json_extract_path_text(calculation,'p2 <- schedule rating rate','factor', true)),
-                trim(json_extract_path_text(calculation,'p2 <- flex rating rate','factor', true)),
-                trim(json_extract_path_text(calculation,'p2 <- flex rating rate','schedule_rating_factor', true)),
-                trim(json_extract_path_text(calculation,'p2 <- schedule rating rate','schedule_rating_factor', true))
+            nvl(nullif(trim(json_extract_path_text(calculation,'p2 <- schedule rating rate','factor', true)),''),
+                nullif(trim(json_extract_path_text(calculation,'p2 <- flex rating rate','factor', true)),''),
+                nullif(trim(json_extract_path_text(calculation,'p2 <- flex rating rate','schedule_rating_factor', true)),''),
+                nullif(trim(json_extract_path_text(calculation,'p2 <- schedule rating rate','schedule_rating_factor', true)),'')
                 ) as SRF
 from s3_operational.rating_svc_prod_calculations
 where lob = 'GL' and creation_time >= '2021-12-01')
@@ -51,6 +51,7 @@ select qpm.business_id,
        qpm.creation_time,
        qpm.year_business_started,
        qpm.GL_Amendment,
+       qpm.highest_status_package,
        fcra.fcra_score,
        raven.raven_score,
        raven.raven_bin,
@@ -59,6 +60,4 @@ select qpm.business_id,
     left join fcra on fcra.business_id = qpm.business_id
     left join raven on raven.business_id = qpm.business_id
     left join srf on srf.job_id = qpm.highest_job_id
-
-
 
