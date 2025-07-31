@@ -1,0 +1,87 @@
+# Loss Costs Exporter
+
+This Python script combines PremOps and ProdCops CSV files, pivots by territory, and exports a separate loss cost file for each state.
+
+## How to Use
+
+1. Clone the repo or download the script
+2. Update the configuration block:
+   - `folder_path` → where your input files are stored
+   - `premops_file` / `prodcops_file` → your CSV filenames
+3. Run the script in your local Python environment
+
+Output will be saved to:
+/by_state_csv/{STATE}_loss_costs.csv
+
+
+## Requirements
+
+- Python 3.8+
+- pandas
+
+
+loss_costs_exporter.py
+
+import pandas as pd
+import os
+
+# --- Configuration ---
+folder_path = '/path/to/loss_costs_folder'
+premops_file = 'losscost_premops.csv'
+prodcops_file = 'losscost_prodcops.csv'
+output_folder = os.path.join(folder_path, 'by_state_csv')
+os.makedirs(output_folder, exist_ok=True)
+
+# --- Configuration ---
+# Set the folder where your input CSVs live
+folder_path = '/path/to/loss_costs_folder'
+
+# Filenames of the PremOps and ProdCops input files
+premops_file = 'losscost_premops.csv'
+prodcops_file = 'losscost_prodcops.csv'
+
+# Folder to save the output CSVs (will be created if it doesn't exist)
+output_folder = os.path.join(folder_path, 'by_state_csv')
+os.makedirs(output_folder, exist_ok=True)
+
+# --- Load input files ---
+premops = pd.read_csv(os.path.join(folder_path, premops_file))
+prodcops = pd.read_csv(os.path.join(folder_path, prodcops_file))
+
+# --- Add source labels for tracking ---
+premops['source'] = 'premops'
+prodcops['source'] = 'prodcops'
+
+# --- Combine datasets into one DataFrame ---
+df = pd.concat([premops, prodcops], ignore_index=True)
+
+# --- Clean and normalize key fields ---
+df['state'] = df['state'].astype(str).str.strip().str.upper()
+df['ops_key'] = df['ops_key'].astype(str).str.strip().str.upper()
+
+# --- Pivot and export one CSV per state ---
+for state in sorted(df['state'].unique()):
+    print(f"Processing state: {state}...")
+
+    state_df = df[df['state'] == state]
+
+    pivot = (
+        state_df
+        .pivot_table(
+            index=['class_code_key', 'ops_key'],
+            columns='Territory',
+            values='Factor',
+            aggfunc='first',
+            fill_value=-1
+        )
+        .reset_index()
+    )
+
+    pivot.columns = [str(col) if isinstance(col, int) else col for col in pivot.columns]
+
+    output_file = os.path.join(output_folder, f"{state}_loss_costs.csv")
+    pivot.to_csv(output_file, index=False)
+
+    print(f"✅ Saved: {output_file}")
+
+print("\n🎉 Export completed for all states.")
